@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Expense Calculator</title>
+        <link rel="stylesheet" href="styles/style.css">
+    </head>
+    <body>
+         <nav class="navbar">
+        <button class="menu-icon"onclick="menuToggle()">☰</button> 
+        <ul class="menu" id="menu">
+         <li><a href="index.html">Home</a></li>
+         <li><a href="expense.html">Expense Calculator</a></li>
+         <li><a href="contact.html">Contact Info</a></li>
+        </ul>
+        </nav>
+        <div class="calculator"><h1>Expense Calculator</h1>
+
+        <form id="expenseForm">
+            <label for="materials">Select material:</label>
+            <select id="materials" name="materials" required>
+                <option value="m-sand">M-sand</option>
+                <option value="p-sand">P-sand</option>
+                <option value="crushed-metal">Crushed Metal</option>
+                <option value="rock-boulders">Rock Boulders</option>
+                <option value="gravel">Gravel</option>
+                <option value="cutting-earth">Cutting Earth</option>
+                <option value="quarry-waste">Quarry Waste</option>
+            </select><br><br>
+            <label for="quantity">Select Quantity (in cft):</label>
+            <select id="quantity" name="quantity" required>
+                <option value="150">150cft</option>
+                <option value="185">185cft</option>
+                <option value="200">200cft</option>
+                <option value="225">225cft</option>
+                <option value="260">260cft</option>
+            </select><br><br>
+            <label for="location">Select Location:</label>
+            <select id="location" name="location" required>
+                <option value="2500">Kallada</option>
+                <option value="2500">Munroe Thuruth</option>
+                <option value="2000">Pavithreswaram</option>
+                <option value="3000">West Kallada</option>
+                <option value="1000">Shuttle</option>
+            </select><br><br>
+            <button id="calculateBtn">Get Total Cost</button>
+            <p id="result"></p>
+        </form></div>
+        <script src="script.js"></script>
+    </body>
+</html>
