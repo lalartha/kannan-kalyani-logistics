@@ -73,7 +73,23 @@ function HomePage({ navigate }) {
     return (
         <div className="container mx-auto px-4 py-8 md:py-16 max-w-6xl">
             <div className="grid gap-12 md:grid-cols-2 items-center">
-                <div className="flex flex-col space-y-8">
+                {/* Truck Image - Order 1 on Desktop, Order 2 on Mobile */}
+                <div className="relative group order-2 md:order-1 flex justify-center items-center">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-primary/50 to-transparent blur-3xl opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+                    <div className="relative animate-float z-10 w-full max-w-lg">
+                        <img 
+                            src="images/6779.png" 
+                            alt="Eicher Truck" 
+                            className="w-full h-auto object-contain transform transition duration-500 hover:scale-[1.02]"
+                        />
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white">
+                            <Badge variant="default" className="bg-primary text-primary-foreground font-bold shadow-lg">PREMIUM SERVICE — KL 24 X 6779</Badge>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Text Content - Order 2 on Desktop, Order 1 on Mobile */}
+                <div className="flex flex-col space-y-8 order-1 md:order-2">
                     <div className="space-y-4">
                         <Badge className="w-fit bg-primary/20 text-primary hover:bg-primary/30 border-none px-4 py-1 text-xs md:text-sm" variant="outline">Kollam's Trusted Logistics</Badge>
                         <h1 className="text-4xl font-extrabold tracking-tight md:text-6xl lg:text-7xl">
@@ -102,22 +118,6 @@ function HomePage({ navigate }) {
                         <div className="flex flex-col">
                             <span className="text-2xl font-bold">Verified</span>
                             <span className="text-xs text-muted-foreground uppercase tracking-widest">Fleet</span>
-                        </div>
-                    </div>
-                </div>
-                <div className="relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-primary/50 to-transparent rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
-                    <div className="relative bg-card border rounded-2xl overflow-hidden shadow-2xl">
-                        <img 
-                            src="images/6779.png" 
-                            alt="Eicher Truck" 
-                            className="w-full h-auto object-cover transform transition duration-500 hover:scale-105"
-                        />
-                        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent text-white">
-                            <div className="flex items-center gap-2">
-                                <Badge variant="default" className="bg-primary text-primary-foreground font-bold">PREMIUM SERVICE</Badge>
-                                <span className="text-sm font-medium opacity-80">KL 24 X 6779</span>
-                            </div>
                         </div>
                     </div>
                 </div>
