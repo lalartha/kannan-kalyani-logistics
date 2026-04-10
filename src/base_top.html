@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kannan Kalyani — Logistics</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <style>
         @layer base {
             :root {
@@ -17,8 +16,8 @@
                 --card-foreground: 240 10% 3.9%;
                 --popover: 0 0% 100%;
                 --popover-foreground: 240 10% 3.9%;
-                --primary: 38 92% 50%;
-                --primary-foreground: 240 5.9% 10%;
+                --primary: 44 95% 48%;
+                --primary-foreground: 240 10% 3.9%;
                 --secondary: 240 4.8% 95.9%;
                 --secondary-foreground: 240 5.9% 10%;
                 --muted: 240 4.8% 95.9%;
@@ -29,7 +28,7 @@
                 --destructive-foreground: 0 0% 98%;
                 --border: 240 5.9% 90%;
                 --input: 240 5.9% 90%;
-                --ring: 38 92% 50%;
+                --ring: 44 95% 48%;
                 --radius: 0.5rem;
             }
             .dark {
@@ -39,8 +38,8 @@
                 --card-foreground: 0 0% 98%;
                 --popover: 240 10% 3.9%;
                 --popover-foreground: 0 0% 98%;
-                --primary: 38 92% 50%;
-                --primary-foreground: 240 5.9% 10%;
+                --primary: 44 95% 48%;
+                --primary-foreground: 240 10% 3.9%;
                 --secondary: 240 3.7% 15.9%;
                 --secondary-foreground: 0 0% 98%;
                 --muted: 240 3.7% 15.9%;
@@ -51,7 +50,7 @@
                 --destructive-foreground: 0 0% 98%;
                 --border: 240 3.7% 15.9%;
                 --input: 240 3.7% 15.9%;
-                --ring: 38 92% 50%;
+                --ring: 44 95% 48%;
             }
             * { border-color: hsl(var(--border)); font-family: 'Inter', sans-serif; }
             body { background-color: hsl(var(--background)); color: hsl(var(--foreground)); font-feature-settings: "rlig" 1, "calt" 1; }
@@ -59,6 +58,8 @@
         .dark .leaflet-layer, .dark .leaflet-control-zoom-in, .dark .leaflet-control-zoom-out, .dark .leaflet-control-attribution { 
             filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); 
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .animate-spin { animation: spin 1s linear infinite; }
     </style>
     <script>
         tailwind.config = {
@@ -83,5 +84,5 @@
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        const { useState, useEffect, useRef, forwardRef, useMemo } = React;
+        const { useState, useEffect, useRef, forwardRef, useMemo, useCallback } = React;
         function cn(...classes) { return classes.filter(Boolean).join(' '); }

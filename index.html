@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kannan Kalyani — Logistics</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <style>
         @layer base {
             :root {
@@ -17,8 +16,8 @@
                 --card-foreground: 240 10% 3.9%;
                 --popover: 0 0% 100%;
                 --popover-foreground: 240 10% 3.9%;
-                --primary: 38 92% 50%;
-                --primary-foreground: 240 5.9% 10%;
+                --primary: 44 95% 48%;
+                --primary-foreground: 240 10% 3.9%;
                 --secondary: 240 4.8% 95.9%;
                 --secondary-foreground: 240 5.9% 10%;
                 --muted: 240 4.8% 95.9%;
@@ -29,7 +28,7 @@
                 --destructive-foreground: 0 0% 98%;
                 --border: 240 5.9% 90%;
                 --input: 240 5.9% 90%;
-                --ring: 38 92% 50%;
+                --ring: 44 95% 48%;
                 --radius: 0.5rem;
             }
             .dark {
@@ -39,8 +38,8 @@
                 --card-foreground: 0 0% 98%;
                 --popover: 240 10% 3.9%;
                 --popover-foreground: 0 0% 98%;
-                --primary: 38 92% 50%;
-                --primary-foreground: 240 5.9% 10%;
+                --primary: 44 95% 48%;
+                --primary-foreground: 240 10% 3.9%;
                 --secondary: 240 3.7% 15.9%;
                 --secondary-foreground: 0 0% 98%;
                 --muted: 240 3.7% 15.9%;
@@ -51,7 +50,7 @@
                 --destructive-foreground: 0 0% 98%;
                 --border: 240 3.7% 15.9%;
                 --input: 240 3.7% 15.9%;
-                --ring: 38 92% 50%;
+                --ring: 44 95% 48%;
             }
             * { border-color: hsl(var(--border)); font-family: 'Inter', sans-serif; }
             body { background-color: hsl(var(--background)); color: hsl(var(--foreground)); font-feature-settings: "rlig" 1, "calt" 1; }
@@ -59,6 +58,8 @@
         .dark .leaflet-layer, .dark .leaflet-control-zoom-in, .dark .leaflet-control-zoom-out, .dark .leaflet-control-attribution { 
             filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); 
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .animate-spin { animation: spin 1s linear infinite; }
     </style>
     <script>
         tailwind.config = {
@@ -83,7 +84,7 @@
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        const { useState, useEffect, useRef, forwardRef, useMemo } = React;
+        const { useState, useEffect, useRef, forwardRef, useMemo, useCallback } = React;
         function cn(...classes) { return classes.filter(Boolean).join(' '); }
 
 const Icons = {
@@ -182,53 +183,213 @@ const TableRow = forwardRef(({ className, ...props }, ref) => <tr ref={ref} clas
 const TableHead = forwardRef(({ className, ...props }, ref) => <th ref={ref} className={cn("h-10 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0", className)} {...props} />);
 const TableCell = forwardRef(({ className, ...props }, ref) => <td ref={ref} className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)} {...props} />);
 
-const DEFAULT_MATERIALS = [
-    { id: 1, name: "M-Sand", pricing_type: "per_ft", price_per_ft: 50, price_per_load: null, description: "Manufactured sand for plastering & brickwork" },
-    { id: 2, name: "P-Sand", pricing_type: "per_ft", price_per_ft: 55, price_per_load: null, description: "Plastering-grade fine sand" },
-    { id: 3, name: "Crushed Metal", pricing_type: "per_ft", price_per_ft: 48, price_per_load: null, description: "Crushed stone aggregate for concrete" },
-    { id: 4, name: "Rock Boulders", pricing_type: "per_load", price_per_ft: null, price_per_load: 5000, description: "Large boulders for foundations" },
-    { id: 5, name: "Gravel", pricing_type: "per_load", price_per_ft: null, price_per_load: 3000, description: "Natural gravel for road base & filling" },
-    { id: 6, name: "Cutting Earth", pricing_type: "per_load", price_per_ft: null, price_per_load: 2500, description: "Excavated earth for land filling" },
-    { id: 7, name: "Quarry Waste", pricing_type: "per_load", price_per_ft: null, price_per_load: 2000, description: "Quarry by-product for sub-base layers"},
-];
-const DEFAULT_LOCATIONS = [
-    { id: 1, name: "Kollam", transport_rate: 1500, distance_km: 8 },
-    { id: 2, name: "Munroe Thuruth", transport_rate: 2500, distance_km: 20 },
-    { id: 3, name: "Kallada", transport_rate: 1800, distance_km: 15 },
-];
-
-function getMaterials() { try { const s = localStorage.getItem('kk_materials'); if (s) return JSON.parse(s); } catch (e) {} return DEFAULT_MATERIALS; }
-function saveMaterials(d) { localStorage.setItem('kk_materials', JSON.stringify(d)); }
-function getLocations() { try { const s = localStorage.getItem('kk_locations'); if (s) return JSON.parse(s); } catch (e) {} return DEFAULT_LOCATIONS; }
-function saveLocations(d) { localStorage.setItem('kk_locations', JSON.stringify(d)); }
+// ============================================================
+// Supabase Client
+// ============================================================
+const SUPABASE_URL = 'https://aiiisosniegmhaptuajo.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_UCB6prrb50VTlYoVuNTSfA_T4I6IPM_';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const LOAD_MATERIALS = ['Gravel', 'Cutting', 'Othala', 'Others'];
-function getSites() { try { const s = localStorage.getItem('kk_sites'); if (s) return JSON.parse(s); } catch (e) {} return []; }
-function saveSites(d) { localStorage.setItem('kk_sites', JSON.stringify(d)); }
-function getDefaultVehicles() { try { const s = localStorage.getItem('kk_def_vehicles'); if (s) return JSON.parse(s); } catch (e) {} return []; }
-function saveDefaultVehicles(d) { localStorage.setItem('kk_def_vehicles', JSON.stringify(d)); }
-function getLogKey(siteId, date) { return `kk_log_${siteId}_${date}`; }
-function getRawLog(siteId, date) { try { const s = localStorage.getItem(getLogKey(siteId, date)); if (s) return JSON.parse(s); } catch (e) {} return null; }
-function saveLog(siteId, date, data) { localStorage.setItem(getLogKey(siteId, date), JSON.stringify(data)); }
-function buildLog(siteId, date) {
-    const defs = getDefaultVehicles();
-    const existing = getRawLog(siteId, date) || { owners: [] };
-    const defOwnerMap = {};
-    defs.forEach(v => { if (!defOwnerMap[v.owner_name]) defOwnerMap[v.owner_name] = []; defOwnerMap[v.owner_name].push(v); });
-    Object.entries(defOwnerMap).forEach(([ownerName, vehicles]) => {
-        let ownerEntry = existing.owners.find(o => o.is_default && o.name === ownerName);
-        if (!ownerEntry) {
-            ownerEntry = { id: `downer_${ownerName}`, name: ownerName, contact: '', is_default: true, is_disabled: false, is_open: true, vehicles: [] };
-            existing.owners.unshift(ownerEntry);
-        }
-        vehicles.forEach(v => {
-            const dvId = `dv_${v.id}`;
-            if (!ownerEntry.vehicles.find(ev => ev.id === dvId)) {
-                ownerEntry.vehicles.push({ id: dvId, number: v.number, is_default: true, is_disabled: false, loads: [] });
+
+// ============================================================
+// Loading Spinner
+// ============================================================
+function Loading({ text = 'Loading...' }) {
+    return (
+        <div className="flex items-center justify-center gap-3 py-12 text-muted-foreground">
+            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span className="text-sm">{text}</span>
+        </div>
+    );
+}
+
+// ============================================================
+// Materials & Locations (Calculator + Admin)
+// ============================================================
+async function fetchMaterials() {
+    const { data, error } = await db.from('materials').select('*').order('id');
+    if (error) { console.error('fetchMaterials:', error); return []; }
+    return data || [];
+}
+
+async function fetchLocations() {
+    const { data, error } = await db.from('locations').select('*').order('id');
+    if (error) { console.error('fetchLocations:', error); return []; }
+    return data || [];
+}
+
+async function updateMaterialField(id, field, value) {
+    const { error } = await db.from('materials').update({ [field]: value }).eq('id', id);
+    if (error) console.error('updateMaterial:', error);
+}
+
+async function updateLocationField(id, field, value) {
+    const { error } = await db.from('locations').update({ [field]: value }).eq('id', id);
+    if (error) console.error('updateLocation:', error);
+}
+
+// ============================================================
+// Sites
+// ============================================================
+async function fetchSites() {
+    const { data, error } = await db.from('sites').select('*').order('created_at', { ascending: false });
+    if (error) { console.error('fetchSites:', error); return []; }
+    return data || [];
+}
+
+async function createSite({ name, location, start_date, end_date }) {
+    const { data, error } = await db.from('sites').insert({ name, location, start_date, end_date }).select().single();
+    if (error) { console.error('createSite:', error); return null; }
+    return data;
+}
+
+async function deleteSite(id) {
+    const { error } = await db.from('sites').delete().eq('id', id);
+    if (error) console.error('deleteSite:', error);
+}
+
+// ============================================================
+// Default Vehicles
+// ============================================================
+async function fetchDefaultVehicles() {
+    const { data, error } = await db.from('default_vehicles').select('*').order('created_at');
+    if (error) { console.error('fetchDefaultVehicles:', error); return []; }
+    return data || [];
+}
+
+async function addDefaultVehicle(number, owner_name) {
+    const { data, error } = await db.from('default_vehicles').insert({ number, owner_name }).select().single();
+    if (error) { console.error('addDefaultVehicle:', error); return null; }
+    return data;
+}
+
+async function removeDefaultVehicle(id) {
+    const { error } = await db.from('default_vehicles').delete().eq('id', id);
+    if (error) console.error('removeDefaultVehicle:', error);
+}
+
+// ============================================================
+// Daily Logs
+// ============================================================
+async function fetchDailyLogsForSite(siteId) {
+    const { data, error } = await db.from('daily_logs').select('id, log_date').eq('site_id', siteId).order('log_date', { ascending: false });
+    if (error) { console.error('fetchDailyLogs:', error); return []; }
+    // For each log, get load count
+    const enriched = [];
+    for (const dl of (data || [])) {
+        const { count } = await db.from('loads')
+            .select('id', { count: 'exact', head: true })
+            .in('vehicle_id', 
+                (await db.from('vehicles').select('id').in('owner_id',
+                    (await db.from('owners').select('id').eq('daily_log_id', dl.id)).data?.map(o=>o.id) || []
+                )).data?.map(v=>v.id) || []
+            );
+        enriched.push({ ...dl, load_count: count || 0 });
+    }
+    return enriched;
+}
+
+async function getOrCreateDailyLog(siteId, date) {
+    // Try existing
+    let { data: dl } = await db.from('daily_logs').select('id').eq('site_id', siteId).eq('log_date', date).maybeSingle();
+    
+    if (!dl) {
+        // Create new
+        const { data: newDl, error } = await db.from('daily_logs').insert({ site_id: siteId, log_date: date }).select('id').single();
+        if (error) { console.error('createDailyLog:', error); return null; }
+        dl = newDl;
+        
+        // Auto-populate with default vehicles
+        const defVehicles = await fetchDefaultVehicles();
+        if (defVehicles.length > 0) {
+            const ownerGroups = {};
+            defVehicles.forEach(v => {
+                if (!ownerGroups[v.owner_name]) ownerGroups[v.owner_name] = [];
+                ownerGroups[v.owner_name].push(v);
+            });
+            for (const [ownerName, vehicles] of Object.entries(ownerGroups)) {
+                const { data: owner } = await db.from('owners')
+                    .insert({ daily_log_id: dl.id, name: ownerName, is_default: true, sort_order: 0 })
+                    .select('id').single();
+                if (owner) {
+                    for (const v of vehicles) {
+                        await db.from('vehicles').insert({ owner_id: owner.id, number: v.number, is_default: true });
+                    }
+                }
             }
-        });
-    });
-    return existing;
+        }
+    }
+    return dl.id;
+}
+
+// ============================================================
+// Full Log Tree (owners -> vehicles -> loads)
+// ============================================================
+async function fetchFullLog(dailyLogId) {
+    const { data, error } = await db.from('owners')
+        .select('*, vehicles(*, loads(*))')
+        .eq('daily_log_id', dailyLogId)
+        .order('sort_order')
+        .order('created_at');
+    if (error) { console.error('fetchFullLog:', error); return []; }
+    return data || [];
+}
+
+// ============================================================
+// Owner CRUD
+// ============================================================
+async function dbAddOwner(dailyLogId, name, contact) {
+    const { data, error } = await db.from('owners')
+        .insert({ daily_log_id: dailyLogId, name, contact: contact || '' })
+        .select().single();
+    if (error) { console.error('addOwner:', error); return null; }
+    return { ...data, vehicles: [] };
+}
+
+async function dbUpdateOwner(id, updates) {
+    const { error } = await db.from('owners').update(updates).eq('id', id);
+    if (error) console.error('updateOwner:', error);
+}
+
+// ============================================================
+// Vehicle CRUD
+// ============================================================
+async function dbAddVehicle(ownerId, number) {
+    const { data, error } = await db.from('vehicles')
+        .insert({ owner_id: ownerId, number })
+        .select().single();
+    if (error) { console.error('addVehicle:', error); return null; }
+    return { ...data, loads: [] };
+}
+
+async function dbUpdateVehicle(id, updates) {
+    const { error } = await db.from('vehicles').update(updates).eq('id', id);
+    if (error) console.error('updateVehicle:', error);
+}
+
+// ============================================================
+// Load CRUD
+// ============================================================
+async function dbAddLoad(vehicleId, load) {
+    const { data, error } = await db.from('loads')
+        .insert({ vehicle_id: vehicleId, load_time: load.load_time, material: load.material, is_paid: load.is_paid, has_pass: load.has_pass })
+        .select().single();
+    if (error) { console.error('addLoad:', error); return null; }
+    return data;
+}
+
+async function dbUpdateLoad(id, updates) {
+    const { error } = await db.from('loads').update(updates).eq('id', id);
+    if (error) console.error('updateLoad:', error);
+}
+
+async function dbDeleteLoad(id) {
+    const { error } = await db.from('loads').delete().eq('id', id);
+    if (error) console.error('deleteLoad:', error);
 }
 
 const ThemeContext = React.createContext();
@@ -252,90 +413,106 @@ function Navbar({ page, navigate }) {
         { id: 'admin', label: 'Admin', icon: Icons.Settings },
     ];
     return (
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-sm">
-            <div className="container mx-auto flex h-14 items-center justify-between px-4">
-                <div className="flex gap-6 md:gap-10">
-                    <button onClick={() => navigate('home')} className="flex items-center space-x-2">
-                        <span className="font-bold inline-block leading-tight text-left">
-                            <div className="text-primary text-base">KANNAN KALYANI</div>
-                            <div className="text-muted-foreground text-[10px] uppercase tracking-wider">Construction Logistics</div>
-                        </span>
-                    </button>
-                    <nav className="hidden md:flex gap-6">
-                        {navItems.map(item => {
-                            const Icon = item.icon;
-                            const isActive = page === item.id;
-                            return (
-                                <button key={item.id} onClick={() => navigate(item.id)}
-                                    className={cn("flex items-center gap-2 text-sm font-medium transition-colors hover:text-foreground/80", isActive ? "text-foreground" : "text-foreground/60")}>
-                                    <Icon className="w-4 h-4" />
-                                    {item.label}
-                                </button>
-                            );
-                        })}
-                    </nav>
+        <>
+            <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <div className="container mx-auto flex h-14 items-center justify-between px-4">
+                    <div className="flex gap-6 md:gap-10">
+                        <button onClick={() => navigate('home')} className="flex items-center space-x-2">
+                            <span className="font-bold inline-block leading-tight text-left">
+                                <div className="text-primary text-sm md:text-base">KANNAN KALYANI</div>
+                                <div className="text-muted-foreground text-[9px] md:text-[10px] uppercase tracking-wider">Construction Logistics</div>
+                            </span>
+                        </button>
+                        <nav className="hidden md:flex gap-6">
+                            {navItems.map(item => {
+                                const Icon = item.icon;
+                                const isActive = page === item.id;
+                                return (
+                                    <button key={item.id} onClick={() => navigate(item.id)}
+                                        className={cn("flex items-center gap-2 text-sm font-medium transition-colors hover:text-foreground/80", isActive ? "text-foreground" : "text-foreground/60")}>
+                                        <Icon className="w-4 h-4" />
+                                        {item.label}
+                                    </button>
+                                );
+                            })}
+                        </nav>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+                            {theme === 'dark' ? <Icons.Sun className="h-4 w-4" /> : <Icons.Moon className="h-4 w-4" />}
+                        </Button>
+                        <Button className="hidden md:inline-flex" variant="default" onClick={() => navigate('calculator')}>Get Estimate</Button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-                        {theme === 'dark' ? <Icons.Sun className="h-4 w-4" /> : <Icons.Moon className="h-4 w-4" />}
-                    </Button>
-                    <Button className="hidden md:inline-flex" variant="default" onClick={() => navigate('calculator')}>Get Estimate</Button>
-                </div>
-            </div>
-            {/* Mobile Nav */}
-            <div className="md:hidden flex justify-around p-2 border-b bg-background">
+            </header>
+
+            {/* Mobile Bottom Nav */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-around p-2 border-t bg-background/95 backdrop-blur pb-safe select-none shadow-[0_-4px_10px_rgb(0,0,0,0.05)] dark:shadow-[0_-4px_10px_rgb(0,0,0,0.4)]">
                 {navItems.map(item => {
                     const Icon = item.icon;
                     const isActive = page === item.id;
                     return (
-                        <button key={item.id} onClick={() => navigate(item.id)} className={cn("flex flex-col items-center gap-1 p-2 rounded-lg text-xs font-medium", isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted")}>
-                            <Icon className="w-5 h-5" />
-                            {item.label}
+                        <button key={item.id} onClick={() => navigate(item.id)} className={cn("flex flex-col items-center justify-center gap-1 w-16 h-12 rounded-lg transition-all", isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted/50")}>
+                            <Icon className={cn("w-5 h-5", isActive && "fill-current/20")} />
+                            <span className="text-[10px] font-medium leading-none">{item.label}</span>
                         </button>
                     )
                 })}
             </div>
-        </header>
+        </>
     );
 }
 
 function HomePage({ navigate }) {
     return (
-        <div className="container mx-auto px-4 py-12 md:py-24 max-w-5xl">
-            <div className="grid gap-8 md:grid-cols-2">
-                <div className="flex flex-col justify-center space-y-6">
-                    <Badge className="w-fit" variant="secondary">Kollam's Trusted Logistics</Badge>
-                    <h1 className="text-4xl font-bold tracking-tight md:text-6xl text-foreground">
-                        Unmatched load.<br/>
-                        <span className="text-primary">On-time delivery.</span>
-                    </h1>
-                    <p className="text-muted-foreground text-lg max-w-md">
-                        Reliable delivery of M-Sand, P-Sand, Crushed Metal, Rock Boulders, Gravel and more — serving Kollam, Kallada, Munroe Thuruth and surrounding areas.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                        <Button size="lg" onClick={() => navigate('calculator')}>Calculate Estimate</Button>
-                        <Button size="lg" variant="outline" onClick={() => navigate('contact')}>Contact Us</Button>
+        <div className="container mx-auto px-4 py-8 md:py-16 max-w-6xl">
+            <div className="grid gap-12 md:grid-cols-2 items-center">
+                <div className="flex flex-col space-y-8">
+                    <div className="space-y-4">
+                        <Badge className="w-fit bg-primary/20 text-primary hover:bg-primary/30 border-none px-4 py-1 text-xs md:text-sm" variant="outline">Kollam's Trusted Logistics</Badge>
+                        <h1 className="text-4xl font-extrabold tracking-tight md:text-6xl lg:text-7xl">
+                            Unmatched load.<br/>
+                            <span className="text-primary italic">On-time delivery.</span>
+                        </h1>
+                        <p className="text-muted-foreground text-base md:text-xl leading-relaxed max-w-lg">
+                            Professional delivery of M-Sand, P-Sand, Crushed Metal, Rock Boulders, and Gravel. Reliable service across Kollam and surrounding regions.
+                        </p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <Button size="lg" className="h-12 md:h-14 px-6 md:px-8 text-base md:text-lg font-bold shadow-lg shadow-primary/20" onClick={() => navigate('calculator')}>Calculate Estimate</Button>
+                        <Button size="lg" variant="outline" className="h-12 md:h-14 px-6 md:px-8 text-base md:text-lg font-bold" onClick={() => navigate('contact')}>Contact Us</Button>
+                    </div>
+                    <div className="flex items-center gap-8 pt-4">
+                        <div className="flex flex-col">
+                            <span className="text-2xl font-bold">24/7</span>
+                            <span className="text-xs text-muted-foreground uppercase tracking-widest">Support</span>
+                        </div>
+                        <div className="w-px h-8 bg-border"></div>
+                        <div className="flex flex-col">
+                            <span className="text-2xl font-bold">15+</span>
+                            <span className="text-xs text-muted-foreground uppercase tracking-widest">Zones</span>
+                        </div>
+                        <div className="w-px h-8 bg-border"></div>
+                        <div className="flex flex-col">
+                            <span className="text-2xl font-bold">Verified</span>
+                            <span className="text-xs text-muted-foreground uppercase tracking-widest">Fleet</span>
+                        </div>
                     </div>
                 </div>
-                <div className="rounded-xl overflow-hidden border bg-muted/30 p-6 flex flex-col justify-center">
-                    <div className="grid grid-cols-2 gap-4">
-                        <Card>
-                            <CardHeader className="p-4"><CardTitle className="text-3xl font-bold text-primary">24/7</CardTitle></CardHeader>
-                            <CardContent className="p-4 pt-0 text-sm text-muted-foreground">Emergency Support</CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="p-4"><CardTitle className="text-3xl font-bold text-primary">15+</CardTitle></CardHeader>
-                            <CardContent className="p-4 pt-0 text-sm text-muted-foreground">Service Zones</CardContent>
-                        </Card>
-                        <Card className="col-span-2">
-                            <CardContent className="p-4 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-primary/10 rounded-lg"><Icons.Truck className="text-primary w-5 h-5"/></div>
-                                    <div className="font-semibold text-sm">Heavy Duty Fleet</div>
-                                </div>
-                                <Badge variant="outline">Verified</Badge>
-                            </CardContent>
-                        </Card>
+                <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-primary/50 to-transparent rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+                    <div className="relative bg-card border rounded-2xl overflow-hidden shadow-2xl">
+                        <img 
+                            src="images/6779.png" 
+                            alt="Eicher Truck" 
+                            className="w-full h-auto object-cover transform transition duration-500 hover:scale-105"
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent text-white">
+                            <div className="flex items-center gap-2">
+                                <Badge variant="default" className="bg-primary text-primary-foreground font-bold">PREMIUM SERVICE</Badge>
+                                <span className="text-sm font-medium opacity-80">KL 24 X 6779</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -344,32 +521,40 @@ function HomePage({ navigate }) {
 }
 
 function CalculatorPage() {
-    const [materials] = useState(getMaterials);
-    const [locations] = useState(getLocations);
+    const [materials, setMaterials] = useState([]);
+    const [locations, setLocations] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [selMat, setSelMat] = useState(null);
     const [selFt, setSelFt] = useState('');
-    const [selLoad, setSelLoad] = useState('');
     const [selLoc, setSelLoc] = useState('');
     const [loads, setLoads] = useState(1);
     const [result, setResult] = useState(null);
 
-    const mat = useMemo(() => materials.find(m => m.id.toString() === selMat), [materials, selMat]);
-    const loc = useMemo(() => locations.find(l => l.id.toString() === selLoc), [locations, selLoc]);
+    useEffect(() => {
+        Promise.all([fetchMaterials(), fetchLocations()]).then(([m, l]) => {
+            setMaterials(m); setLocations(l); setLoading(false);
+        });
+    }, []);
+
+    const mat = useMemo(() => materials.find(m => m.id?.toString() === selMat), [materials, selMat]);
+    const loc = useMemo(() => locations.find(l => l.id?.toString() === selLoc), [locations, selLoc]);
 
     function calculate() {
         if (!mat || !loc) return;
         let matCost = 0;
         if (mat.pricing_type === 'per_ft') {
             if (!selFt) return;
-            matCost = mat.price_per_ft * parseInt(selFt);
+            matCost = Number(mat.price_per_ft) * parseInt(selFt);
         } else {
-            matCost = mat.price_per_load;
+            matCost = Number(mat.price_per_load);
         }
-        const tpCost = loc.transport_rate;
+        const tpCost = Number(loc.transport_rate);
         const base = matCost + tpCost;
         const total = base * loads;
         setResult({ matCost, tpCost, base, total, mat, loc, ft: selFt, loads });
     }
+
+    if (loading) return <div className="container mx-auto px-4 py-12 max-w-3xl"><Loading text="Loading calculator..." /></div>;
 
     return (
         <div className="container mx-auto px-4 py-8 md:py-12 max-w-3xl">
@@ -424,7 +609,7 @@ function CalculatorPage() {
                             <Label>Delivery Destination</Label>
                             <Select value={selLoc || ''} onChange={e => { setSelLoc(e.target.value); setResult(null); }}>
                                 <option value="">Choose location...</option>
-                                {locations.map(l => <option key={l.id} value={l.id}>{l.name} — ₹{l.transport_rate.toLocaleString()}</option>)}
+                                {locations.map(l => <option key={l.id} value={l.id}>{l.name} — ₹{Number(l.transport_rate).toLocaleString()}</option>)}
                             </Select>
                         </div>
 
@@ -510,25 +695,37 @@ function ContactPage() {
 }
 
 function AdminPage() {
-    const [materials, setMaterials] = useState(getMaterials);
-    const [locations, setLocations] = useState(getLocations);
+    const [materials, setMaterials] = useState([]);
+    const [locations, setLocations] = useState([]);
     const [activeTab, setActiveTab] = useState('materials');
+    const [loading, setLoading] = useState(true);
 
-    const updateMat = (id, field, val) => {
-        const newM = materials.map(m => m.id === id ? { ...m, [field]: val === '' ? null : Number(val) } : m);
-        setMaterials(newM); saveMaterials(newM);
+    useEffect(() => {
+        Promise.all([fetchMaterials(), fetchLocations()]).then(([m, l]) => {
+            setMaterials(m); setLocations(l); setLoading(false);
+        });
+    }, []);
+
+    const updateMat = async (id, field, val) => {
+        const numVal = val === '' ? null : Number(val);
+        // Optimistic update
+        setMaterials(materials.map(m => m.id === id ? { ...m, [field]: numVal } : m));
+        await updateMaterialField(id, field, numVal);
     };
-    const updateLoc = (id, field, val) => {
-        const newL = locations.map(l => l.id === id ? { ...l, [field]: val === '' ? null : Number(val) } : l);
-        setLocations(newL); saveLocations(newL);
+
+    const updateLoc = async (id, field, val) => {
+        const numVal = val === '' ? null : Number(val);
+        setLocations(locations.map(l => l.id === id ? { ...l, [field]: numVal } : l));
+        await updateLocationField(id, field, numVal);
     };
-    const reset = () => { if(confirm('Reset all to defaults?')) { saveMaterials(DEFAULT_MATERIALS); saveLocations(DEFAULT_LOCATIONS); setMaterials(DEFAULT_MATERIALS); setLocations(DEFAULT_LOCATIONS); } };
+
+    if (loading) return <div className="container mx-auto px-4 py-12 max-w-4xl"><Loading text="Loading admin panel..." /></div>;
 
     return (
         <div className="container mx-auto px-4 py-12 max-w-4xl space-y-8">
             <div className="flex justify-between items-center">
                 <h2 className="text-3xl font-bold tracking-tight">Admin Portal</h2>
-                <Button variant="destructive" size="sm" onClick={reset}>Reset Defaults</Button>
+                <Badge variant="secondary">Supabase Connected</Badge>
             </div>
             
             <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -541,7 +738,7 @@ function AdminPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Materials Base Rates</CardTitle>
-                            <CardDescription>Update per-ft or per-load base pricing. Data saves automatically.</CardDescription>
+                            <CardDescription>Update per-ft or per-load base pricing. Changes save to Supabase automatically.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Table>
@@ -559,7 +756,7 @@ function AdminPage() {
                                             <TableCell><Badge variant="outline">{m.pricing_type === 'per_ft' ? 'Per Cubic Ft' : 'Per Load'}</Badge></TableCell>
                                             <TableCell>
                                                 <Input type="number" className="w-32"
-                                                    value={m.pricing_type === 'per_ft' ? (m.price_per_ft || '') : (m.price_per_load || '')}
+                                                    value={m.pricing_type === 'per_ft' ? (m.price_per_ft ?? '') : (m.price_per_load ?? '')}
                                                     onChange={e => updateMat(m.id, m.pricing_type === 'per_ft' ? 'price_per_ft' : 'price_per_load', e.target.value)}
                                                 />
                                             </TableCell>
@@ -590,7 +787,7 @@ function AdminPage() {
                                         <TableRow key={l.id}>
                                             <TableCell className="font-medium">{l.name}</TableCell>
                                             <TableCell>
-                                                <Input type="number" className="w-32" value={l.transport_rate || ''} onChange={e => updateLoc(l.id, 'transport_rate', e.target.value)} />
+                                                <Input type="number" className="w-32" value={l.transport_rate ?? ''} onChange={e => updateLoc(l.id, 'transport_rate', e.target.value)} />
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -616,7 +813,7 @@ function App() {
         <ThemeProvider>
             <div className="min-h-screen flex flex-col">
                 <Navbar page={page} navigate={navigate} />
-                <main className="flex-1">
+                <main className="flex-1 pb-16 md:pb-0">
                     {page === 'home' && <HomePage navigate={navigate} />}
                     {page === 'calculator' && <CalculatorPage />}
                     {page === 'logistics' && <LogisticsPage />}
@@ -634,34 +831,51 @@ function App() {
 }
 
 function LogisticsPage() {
-    const [sites, setSites] = useState(getSites);
-    const [defVehicles, setDefVehicles] = useState(getDefaultVehicles);
+    const [sites, setSites] = useState([]);
+    const [defVehicles, setDefVehicles] = useState([]);
     const [activeSite, setActiveSite] = useState(null);
     const [activeDate, setActiveDate] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        Promise.all([fetchSites(), fetchDefaultVehicles()]).then(([s, dv]) => {
+            setSites(s); setDefVehicles(dv); setLoading(false);
+        });
+    }, []);
 
     const isSiteExpired = (end) => end && new Date(end) < new Date(new Date().setHours(0,0,0,0));
     
-    // Auto-update standard vehicles
-    const addDefVehicle = (e) => {
+    const handleAddDefVehicle = async (e) => {
         e.preventDefault();
-        const num = e.target.num.value; const own = e.target.own.value;
-        if(num && own && !defVehicles.find(v=>v.number===num)) {
-            const nd = [...defVehicles, {id: Date.now().toString(), number: num, owner_name: own}];
-            setDefVehicles(nd); saveDefaultVehicles(nd);
-            e.target.reset();
-        }
+        const num = e.target.num.value.trim().toUpperCase();
+        const own = e.target.own.value.trim();
+        if (!num || !own) return;
+        if (defVehicles.find(v => v.number === num)) { alert('Vehicle already exists.'); return; }
+        const nv = await addDefaultVehicle(num, own);
+        if (nv) { setDefVehicles([...defVehicles, nv]); e.target.reset(); }
     };
-    const removeDefVehicle = (id) => {
-        const nd = defVehicles.filter(v=>v.id!==id);
-        setDefVehicles(nd); saveDefaultVehicles(nd);
+
+    const handleRemoveDefVehicle = async (id) => {
+        await removeDefaultVehicle(id);
+        setDefVehicles(defVehicles.filter(v => v.id !== id));
+    };
+
+    const handleCreateSite = async (e) => {
+        e.preventDefault();
+        const fm = new FormData(e.target);
+        const s = await createSite({ name: fm.get('name'), location: fm.get('loc'), start_date: fm.get('sd'), end_date: fm.get('ed') });
+        if (s) { setSites([s, ...sites]); e.target.reset(); setActiveSite(s); }
     };
 
     if (activeDate && activeSite) return <DailyLogView site={activeSite} date={activeDate} onBack={() => setActiveDate(null)} />;
-    if (activeSite) return <DateView site={activeSite} onBack={() => setActiveSite(null)} onOpenDate={setActiveDate} onUpdate={()=>{setSites(getSites())}} />;
+    if (activeSite) return <DateView site={activeSite} onBack={() => { setActiveSite(null); fetchSites().then(setSites); }} onOpenDate={setActiveDate} />;
+
+    if (loading) return <div className="container mx-auto px-4 py-12 max-w-4xl"><Loading text="Loading sites..." /></div>;
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl space-y-8">
             <h2 className="text-3xl font-bold tracking-tight">Active Sites</h2>
+
             {/* Default Vehicles Panel */}
             <details className="group [&_summary::-webkit-details-marker]:hidden border rounded-xl overflow-hidden bg-card">
                 <summary className="flex cursor-pointer items-center justify-between bg-muted/30 p-4 font-semibold">
@@ -674,11 +888,11 @@ function LogisticsPage() {
                         {defVehicles.map(v => (
                             <div key={v.id} className="flex justify-between items-center p-3 border rounded-md">
                                 <span className="font-medium flex items-center gap-2"><Icons.Truck className="w-4 h-4 text-primary"/> {v.number} <span className="text-muted-foreground text-xs font-normal">({v.owner_name})</span></span>
-                                <Button variant="ghost" size="sm" onClick={() => removeDefVehicle(v.id)}><Icons.Trash2 className="w-4 h-4 text-destructive"/></Button>
+                                <Button variant="ghost" size="sm" onClick={() => handleRemoveDefVehicle(v.id)}><Icons.Trash2 className="w-4 h-4 text-destructive"/></Button>
                             </div>
                         ))}
                     </div>
-                    <form onSubmit={addDefVehicle} className="flex gap-2">
+                    <form onSubmit={handleAddDefVehicle} className="flex gap-2">
                         <Input name="num" placeholder="Vehicle No (e.g. KL07)" required className="uppercase" />
                         <Input name="own" placeholder="Owner Name" required />
                         <Button type="submit">Add</Button>
@@ -686,19 +900,16 @@ function LogisticsPage() {
                 </div>
             </details>
 
-            <form onSubmit={e => {
-                e.preventDefault();
-                const fm = new FormData(e.target);
-                const s = { id: 'site_'+Date.now(), name: fm.get('name'), location: fm.get('loc'), start_date: fm.get('sd'), end_date: fm.get('ed') };
-                const ns = [...sites, s]; setSites(ns); saveSites(ns); e.target.reset(); setActiveSite(s);
-            }} className="grid gap-4 md:grid-cols-5 p-4 border rounded-xl bg-card">
+            {/* New Site Form */}
+            <form onSubmit={handleCreateSite} className="grid gap-4 md:grid-cols-5 p-4 border rounded-xl bg-card">
                 <div className="md:col-span-1"><Label>New Site Name</Label><Input name="name" required placeholder="Project Name" /></div>
                 <div className="md:col-span-1"><Label>Location</Label><Input name="loc" required placeholder="City/Region" /></div>
                 <div className="md:col-span-1"><Label>Start Date</Label><Input name="sd" type="date" required defaultValue={new Date().toISOString().split('T')[0]}/></div>
-                <div className="md:col-span-1"><Label>Legal Pass End Date</Label><Input name="ed" type="date" required /></div>
+                <div className="md:col-span-1"><Label>Pass End Date</Label><Input name="ed" type="date" required /></div>
                 <div className="md:col-span-1 flex items-end"><Button className="w-full">Create Site</Button></div>
             </form>
 
+            {/* Site List */}
             <div className="space-y-3">
                 {sites.map(s => (
                     <Card key={s.id} className="cursor-pointer hover:border-primary transition-colors" onClick={() => setActiveSite(s)}>
@@ -724,8 +935,12 @@ function LogisticsPage() {
 
 function DateView({ site, onBack, onOpenDate }) {
     const [selDate, setSelDate] = useState(new Date().toISOString().split('T')[0]);
-    const keys = Object.keys(localStorage).filter(k => k.startsWith(`kk_log_${site.id}_`));
-    const dates = keys.map(k => k.split(`kk_log_${site.id}_`)[1]).sort((a,b)=>new Date(b)-new Date(a));
+    const [logs, setLogs] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchDailyLogsForSite(site.id).then(d => { setLogs(d); setLoading(false); });
+    }, [site.id]);
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
@@ -736,44 +951,59 @@ function DateView({ site, onBack, onOpenDate }) {
             <h2 className="text-3xl font-bold tracking-tight">Select Date</h2>
             <Card>
                 <CardContent className="pt-6 flex gap-4">
-                    <Input type="date" value={selDate} onChange={e=>setSelDate(e.target.value)} />
+                    <Input type="date" value={selDate} onChange={e => setSelDate(e.target.value)} />
                     <Button onClick={() => onOpenDate(selDate)}>Open Log</Button>
                 </CardContent>
             </Card>
             <h3 className="text-xl font-semibold mt-8">Recent Logs</h3>
-            <div className="space-y-2">
-                {dates.map(d => {
-                    const lg = getRawLog(site.id, d);
-                    let count = 0;
-                    lg?.owners?.forEach(o => o.vehicles?.forEach(v => count += v.loads?.length || 0));
-                    return (
-                        <div key={d} className="flex justify-between items-center p-4 border rounded-lg hover:border-primary cursor-pointer transition-colors" onClick={() => onOpenDate(d)}>
-                            <span className="font-medium flex items-center gap-2"><Icons.Calendar className="w-4 h-4"/> {new Date(d).toLocaleDateString(undefined, {weekday:'long', year:'numeric', month:'short', day:'numeric'})}</span>
-                            <Badge variant="secondary">{count} loads</Badge>
+            {loading ? <Loading text="Loading logs..." /> : (
+                <div className="space-y-2">
+                    {logs.map(d => (
+                        <div key={d.id} className="flex justify-between items-center p-4 border rounded-lg hover:border-primary cursor-pointer transition-colors" onClick={() => onOpenDate(d.log_date)}>
+                            <span className="font-medium flex items-center gap-2"><Icons.Calendar className="w-4 h-4"/> {new Date(d.log_date).toLocaleDateString(undefined, {weekday:'long', year:'numeric', month:'short', day:'numeric'})}</span>
+                            <Badge variant="secondary">{d.load_count} loads</Badge>
                         </div>
-                    );
-                })}
-                {dates.length === 0 && <div className="text-sm text-muted-foreground py-4">No logs recorded yet.</div>}
-            </div>
+                    ))}
+                    {logs.length === 0 && <div className="text-sm text-muted-foreground py-4">No logs recorded yet.</div>}
+                </div>
+            )}
         </div>
     );
 }
 
 function DailyLogView({ site, date, onBack }) {
-    const [log, setLog] = useState(() => buildLog(site.id, date));
-    useEffect(() => { saveLog(site.id, date, log); }, [log, site.id, date]);
+    const [dailyLogId, setDailyLogId] = useState(null);
+    const [owners, setOwners] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const addOwner = (e) => {
+    useEffect(() => {
+        (async () => {
+            const logId = await getOrCreateDailyLog(site.id, date);
+            if (!logId) { setLoading(false); return; }
+            setDailyLogId(logId);
+            const ownerData = await fetchFullLog(logId);
+            setOwners(ownerData);
+            setLoading(false);
+        })();
+    }, [site.id, date]);
+
+    const handleAddOwner = async (e) => {
         e.preventDefault();
-        const nm = e.target.nm.value; const ph = e.target.ph.value;
-        if(nm) {
-            setLog({ ...log, owners: [...log.owners, { id: 'own_'+Date.now(), name: nm, contact: ph, is_open: true, is_disabled: false, vehicles: [] }] });
-            e.target.reset();
-        }
+        const nm = e.target.nm.value.trim();
+        const ph = e.target.ph.value.trim();
+        if (!nm) return;
+        const newOwner = await dbAddOwner(dailyLogId, nm, ph);
+        if (newOwner) { setOwners([...owners, newOwner]); e.target.reset(); }
     };
     
+    const updateOwnerInState = (idx, updated) => {
+        const nOwners = [...owners]; nOwners[idx] = updated; setOwners(nOwners);
+    };
+
     let totalLoads = 0;
-    log.owners.forEach(o => { if(!o.is_disabled) { o.vehicles.forEach(v => { if(!v.is_disabled) { totalLoads += v.loads.length; }})}});
+    owners.forEach(o => { if(!o.is_disabled) { (o.vehicles || []).forEach(v => { if(!v.is_disabled) { totalLoads += (v.loads || []).length; }})}});
+
+    if (loading) return <div className="container mx-auto px-4 py-12 max-w-5xl"><Loading text="Loading daily log..." /></div>;
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-5xl space-y-6">
@@ -789,15 +1019,13 @@ function DailyLogView({ site, date, onBack }) {
             </div>
 
             <div className="space-y-4">
-                {log.owners.map((o, oi) => (
-                    <OwnerSection key={o.id} owner={o} updateOwner={(uo) => {
-                        const no = [...log.owners]; no[oi] = uo; setLog({...log, owners: no});
-                    }} log={log} />
+                {owners.map((o, oi) => (
+                    <OwnerSection key={o.id} owner={o} owners={owners} updateOwner={(uo) => updateOwnerInState(oi, uo)} />
                 ))}
 
                 <Card className="bg-muted/30 border-dashed">
                     <CardContent className="pt-6">
-                        <form onSubmit={addOwner} className="flex gap-4">
+                        <form onSubmit={handleAddOwner} className="flex gap-4">
                             <Input name="nm" placeholder="New Transporter / Owner Name" required />
                             <Input name="ph" placeholder="Contact (optional)" />
                             <Button type="submit" variant="secondary"><Icons.Plus className="w-4 h-4 mr-1"/> Add Owner</Button>
@@ -806,32 +1034,44 @@ function DailyLogView({ site, date, onBack }) {
                 </Card>
             </div>
             
-            <OwnerSummary owners={log.owners} />
+            <OwnerSummary owners={owners} />
         </div>
     );
 }
 
-function OwnerSection({ owner, updateOwner, log }) {
+function OwnerSection({ owner, owners, updateOwner }) {
     let oLoads = 0;
-    owner.vehicles?.forEach(v => { if(!v.is_disabled) oLoads += v.loads?.length || 0; });
+    (owner.vehicles || []).forEach(v => { if(!v.is_disabled) oLoads += (v.loads || []).length; });
     
-    // Check global uniqueness for new vehicle
-    const addVehicle = (e) => {
-        e.preventDefault(); const nv = e.target.nv.value.trim().toUpperCase();
-        if(!nv) return;
+    const handleToggleDisabled = async (e) => {
+        e.stopPropagation();
+        const newVal = !owner.is_disabled;
+        await dbUpdateOwner(owner.id, { is_disabled: newVal });
+        updateOwner({ ...owner, is_disabled: newVal });
+    };
+
+    const handleToggleOpen = () => updateOwner({ ...owner, is_open: !owner.is_open });
+
+    const handleAddVehicle = async (e) => {
+        e.preventDefault();
+        const nv = e.target.nv.value.trim().toUpperCase();
+        if (!nv) return;
+        // Check uniqueness across all owners in current day
         let exists = false;
-        log.owners.forEach(o => o.vehicles.forEach(v => { if(v.number === nv) exists = true; }));
-        if(exists) { alert('Vehicle already exists today.'); return; }
-        updateOwner({...owner, vehicles: [...owner.vehicles, {id: 'v_'+Date.now(), number: nv, is_disabled: false, loads: []}]});
-        e.target.reset();
+        owners.forEach(o => (o.vehicles || []).forEach(v => { if (v.number === nv) exists = true; }));
+        if (exists) { alert('Vehicle already exists today.'); return; }
+        const newVehicle = await dbAddVehicle(owner.id, nv);
+        if (newVehicle) {
+            updateOwner({ ...owner, vehicles: [...(owner.vehicles || []), newVehicle] });
+            e.target.reset();
+        }
     };
 
     return (
         <Card className="overflow-hidden">
-            <div className="flex items-center justify-between border-b bg-muted/40 p-3 pr-4 group cursor-pointer" onClick={() => updateOwner({...owner, is_open: !owner.is_open})}>
+            <div className="flex items-center justify-between border-b bg-muted/40 p-3 pr-4 cursor-pointer" onClick={handleToggleOpen}>
                 <div className="flex items-center gap-4">
-                    <Button variant={owner.is_disabled ? "outline" : "default"} size="sm" className="h-7 text-xs w-14"
-                        onClick={(e) => { e.stopPropagation(); updateOwner({...owner, is_disabled: !owner.is_disabled}); }}>
+                    <Button variant={owner.is_disabled ? "outline" : "default"} size="sm" className="h-7 text-xs w-14" onClick={handleToggleDisabled}>
                         {owner.is_disabled ? 'OFF' : 'ON'}
                     </Button>
                     <div className={cn("font-semibold flex items-center gap-2", owner.is_disabled && "opacity-50 line-through")}>
@@ -847,12 +1087,12 @@ function OwnerSection({ owner, updateOwner, log }) {
             
             {owner.is_open && !owner.is_disabled && (
                 <div className="p-4 space-y-4">
-                    {owner.vehicles.map((v, vi) => (
+                    {(owner.vehicles || []).map((v, vi) => (
                         <VehicleRow key={v.id} vehicle={v} updateVehicle={(uv) => {
-                            const nv = [...owner.vehicles]; nv[vi] = uv; updateOwner({...owner, vehicles: nv});
+                            const nv = [...(owner.vehicles || [])]; nv[vi] = uv; updateOwner({ ...owner, vehicles: nv });
                         }} />
                     ))}
-                    <form onSubmit={addVehicle} className="flex gap-2 w-full max-w-sm mt-4">
+                    <form onSubmit={handleAddVehicle} className="flex gap-2 w-full max-w-sm mt-4">
                         <Input name="nv" placeholder="Add Vehicle (e.g. KL07)" size="sm" className="uppercase h-8" />
                         <Button type="submit" variant="outline" size="sm" className="h-8"><Icons.Plus className="w-4 h-4"/></Button>
                     </form>
@@ -864,12 +1104,41 @@ function OwnerSection({ owner, updateOwner, log }) {
 
 function VehicleRow({ vehicle, updateVehicle }) {
     const [open, setOpen] = useState(false);
+
+    const handleToggleDisabled = async (e) => {
+        e.stopPropagation();
+        const newVal = !vehicle.is_disabled;
+        await dbUpdateVehicle(vehicle.id, { is_disabled: newVal });
+        updateVehicle({ ...vehicle, is_disabled: newVal });
+    };
+
+    const handleAddLoad = async () => {
+        const newLoad = await dbAddLoad(vehicle.id, {
+            load_time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            material: 'Gravel',
+            is_paid: false,
+            has_pass: false
+        });
+        if (newLoad) updateVehicle({ ...vehicle, loads: [...(vehicle.loads || []), newLoad] });
+    };
+
+    const handleUpdateLoad = async (li, field, value) => {
+        const load = vehicle.loads[li];
+        await dbUpdateLoad(load.id, { [field]: value });
+        const nl = [...vehicle.loads]; nl[li] = { ...load, [field]: value }; updateVehicle({ ...vehicle, loads: nl });
+    };
+
+    const handleDeleteLoad = async (li) => {
+        const load = vehicle.loads[li];
+        await dbDeleteLoad(load.id);
+        const nl = [...vehicle.loads]; nl.splice(li, 1); updateVehicle({ ...vehicle, loads: nl });
+    };
+
     return (
         <div className="border border-muted-foreground/20 rounded-lg overflow-hidden flex flex-col">
             <div className="flex justify-between items-center bg-muted/20 p-2 px-3 cursor-pointer" onClick={() => setOpen(!open)}>
                 <div className="flex items-center gap-3">
-                    <Button variant={vehicle.is_disabled ? "outline" : "secondary"} size="sm" className="h-6 text-[10px] w-12 px-0"
-                        onClick={(e) => { e.stopPropagation(); updateVehicle({...vehicle, is_disabled: !vehicle.is_disabled}); }}>
+                    <Button variant={vehicle.is_disabled ? "outline" : "secondary"} size="sm" className="h-6 text-[10px] w-12 px-0" onClick={handleToggleDisabled}>
                         {vehicle.is_disabled ? 'OFF' : 'ON'}
                     </Button>
                     <div className={cn("font-medium text-sm flex items-center gap-2", vehicle.is_disabled && "opacity-50 line-through")}>
@@ -877,40 +1146,31 @@ function VehicleRow({ vehicle, updateVehicle }) {
                     </div>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    {vehicle.loads.length} loads
+                    {(vehicle.loads || []).length} loads
                     <Icons.ChevronDown className={cn("w-4 h-4 transition-transform", !open && "rotate-180")} />
                 </div>
             </div>
             {open && !vehicle.is_disabled && (
                 <div className="p-3 space-y-2 bg-background border-t">
-                    {vehicle.loads.map((l, li) => (
-                        <div key={li} className="flex items-center gap-2 text-sm bg-muted/30 p-2 rounded border border-muted">
-                            <span className="text-muted-foreground tabular-nums px-2 border-r">{l.time}</span>
-                            <Select className="h-7 py-0 w-32 border-transparent bg-transparent" value={l.material} onChange={(e) => {
-                                const nl = [...vehicle.loads]; nl[li].material = e.target.value; updateVehicle({...vehicle, loads: nl});
-                            }}>
+                    {(vehicle.loads || []).map((l, li) => (
+                        <div key={l.id} className="flex items-center gap-2 text-sm bg-muted/30 p-2 rounded border border-muted">
+                            <span className="text-muted-foreground tabular-nums px-2 border-r">{l.load_time}</span>
+                            <Select className="h-7 py-0 w-32 border-transparent bg-transparent" value={l.material} onChange={(e) => handleUpdateLoad(li, 'material', e.target.value)}>
                                 {LOAD_MATERIALS.map(m => <option key={m}>{m}</option>)}
                             </Select>
                             <Button variant="ghost" size="sm" className={cn("h-7 px-2", l.is_paid ? "text-green-600 bg-green-50 dark:bg-green-950/30" : "text-destructive bg-destructive/10")}
-                                onClick={() => { const nl = [...vehicle.loads]; nl[li].is_paid = !l.is_paid; updateVehicle({...vehicle, loads: nl}); }}>
+                                onClick={() => handleUpdateLoad(li, 'is_paid', !l.is_paid)}>
                                 {l.is_paid ? 'Paid' : 'Unpaid'}
                             </Button>
                             <label className="flex items-center gap-1 cursor-pointer">
-                                <input type="checkbox" checked={l.has_pass} className="accent-primary" onChange={(e) => {
-                                    const nl = [...vehicle.loads]; nl[li].has_pass = e.target.checked; updateVehicle({...vehicle, loads: nl});
-                                }}/> <span className="text-xs">Pass</span>
+                                <input type="checkbox" checked={l.has_pass} className="accent-primary" onChange={(e) => handleUpdateLoad(li, 'has_pass', e.target.checked)}/> <span className="text-xs">Pass</span>
                             </label>
                             <div className="flex-1 text-right">
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={() => {
-                                    const nl = [...vehicle.loads]; nl.splice(li, 1); updateVehicle({...vehicle, loads: nl});
-                                }}><Icons.X className="w-3 h-3"/></Button>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={() => handleDeleteLoad(li)}><Icons.X className="w-3 h-3"/></Button>
                             </div>
                         </div>
                     ))}
-                    <Button variant="outline" size="sm" className="w-full mt-2 h-8 border-dashed" onClick={() => {
-                        const nl = [...vehicle.loads, { time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), material: 'Gravel', is_paid: false, has_pass: false }];
-                        updateVehicle({...vehicle, loads: nl});
-                    }}>
+                    <Button variant="outline" size="sm" className="w-full mt-2 h-8 border-dashed" onClick={handleAddLoad}>
                         <Icons.Plus className="w-4 h-4 mr-1"/> Add Load
                     </Button>
                 </div>
@@ -922,18 +1182,18 @@ function VehicleRow({ vehicle, updateVehicle }) {
 function OwnerSummary({ owners }) {
     let summary = [];
     owners.forEach(o => {
-        if(o.is_disabled) return;
+        if (o.is_disabled) return;
         let t = 0, p = 0, u = 0, mats = {};
-        o.vehicles.forEach(v => {
-            if(v.is_disabled) return;
-            v.loads.forEach(l => {
-                t++; if(l.is_paid) p++; else u++;
-                mats[l.material] = (mats[l.material]||0)+1;
+        (o.vehicles || []).forEach(v => {
+            if (v.is_disabled) return;
+            (v.loads || []).forEach(l => {
+                t++; if (l.is_paid) p++; else u++;
+                mats[l.material] = (mats[l.material] || 0) + 1;
             });
         });
-        if(t > 0) summary.push({ name: o.name, total: t, paid: p, unpaid: u, mats: Object.entries(mats).map(([k,v])=>`${k}:${v}`).join(', ') });
+        if (t > 0) summary.push({ name: o.name, total: t, paid: p, unpaid: u, mats: Object.entries(mats).map(([k, v]) => `${k}:${v}`).join(', ') });
     });
-    if(summary.length === 0) return null;
+    if (summary.length === 0) return null;
 
     return (
         <Card className="mt-8 border-primary/20">

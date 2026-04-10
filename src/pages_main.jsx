@@ -19,90 +19,106 @@ function Navbar({ page, navigate }) {
         { id: 'admin', label: 'Admin', icon: Icons.Settings },
     ];
     return (
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-sm">
-            <div className="container mx-auto flex h-14 items-center justify-between px-4">
-                <div className="flex gap-6 md:gap-10">
-                    <button onClick={() => navigate('home')} className="flex items-center space-x-2">
-                        <span className="font-bold inline-block leading-tight text-left">
-                            <div className="text-primary text-base">KANNAN KALYANI</div>
-                            <div className="text-muted-foreground text-[10px] uppercase tracking-wider">Construction Logistics</div>
-                        </span>
-                    </button>
-                    <nav className="hidden md:flex gap-6">
-                        {navItems.map(item => {
-                            const Icon = item.icon;
-                            const isActive = page === item.id;
-                            return (
-                                <button key={item.id} onClick={() => navigate(item.id)}
-                                    className={cn("flex items-center gap-2 text-sm font-medium transition-colors hover:text-foreground/80", isActive ? "text-foreground" : "text-foreground/60")}>
-                                    <Icon className="w-4 h-4" />
-                                    {item.label}
-                                </button>
-                            );
-                        })}
-                    </nav>
+        <>
+            <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <div className="container mx-auto flex h-14 items-center justify-between px-4">
+                    <div className="flex gap-6 md:gap-10">
+                        <button onClick={() => navigate('home')} className="flex items-center space-x-2">
+                            <span className="font-bold inline-block leading-tight text-left">
+                                <div className="text-primary text-sm md:text-base">KANNAN KALYANI</div>
+                                <div className="text-muted-foreground text-[9px] md:text-[10px] uppercase tracking-wider">Construction Logistics</div>
+                            </span>
+                        </button>
+                        <nav className="hidden md:flex gap-6">
+                            {navItems.map(item => {
+                                const Icon = item.icon;
+                                const isActive = page === item.id;
+                                return (
+                                    <button key={item.id} onClick={() => navigate(item.id)}
+                                        className={cn("flex items-center gap-2 text-sm font-medium transition-colors hover:text-foreground/80", isActive ? "text-foreground" : "text-foreground/60")}>
+                                        <Icon className="w-4 h-4" />
+                                        {item.label}
+                                    </button>
+                                );
+                            })}
+                        </nav>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+                            {theme === 'dark' ? <Icons.Sun className="h-4 w-4" /> : <Icons.Moon className="h-4 w-4" />}
+                        </Button>
+                        <Button className="hidden md:inline-flex" variant="default" onClick={() => navigate('calculator')}>Get Estimate</Button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-                        {theme === 'dark' ? <Icons.Sun className="h-4 w-4" /> : <Icons.Moon className="h-4 w-4" />}
-                    </Button>
-                    <Button className="hidden md:inline-flex" variant="default" onClick={() => navigate('calculator')}>Get Estimate</Button>
-                </div>
-            </div>
-            {/* Mobile Nav */}
-            <div className="md:hidden flex justify-around p-2 border-b bg-background">
+            </header>
+
+            {/* Mobile Bottom Nav */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-around p-2 border-t bg-background/95 backdrop-blur pb-safe select-none shadow-[0_-4px_10px_rgb(0,0,0,0.05)] dark:shadow-[0_-4px_10px_rgb(0,0,0,0.4)]">
                 {navItems.map(item => {
                     const Icon = item.icon;
                     const isActive = page === item.id;
                     return (
-                        <button key={item.id} onClick={() => navigate(item.id)} className={cn("flex flex-col items-center gap-1 p-2 rounded-lg text-xs font-medium", isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted")}>
-                            <Icon className="w-5 h-5" />
-                            {item.label}
+                        <button key={item.id} onClick={() => navigate(item.id)} className={cn("flex flex-col items-center justify-center gap-1 w-16 h-12 rounded-lg transition-all", isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted/50")}>
+                            <Icon className={cn("w-5 h-5", isActive && "fill-current/20")} />
+                            <span className="text-[10px] font-medium leading-none">{item.label}</span>
                         </button>
                     )
                 })}
             </div>
-        </header>
+        </>
     );
 }
 
 function HomePage({ navigate }) {
     return (
-        <div className="container mx-auto px-4 py-12 md:py-24 max-w-5xl">
-            <div className="grid gap-8 md:grid-cols-2">
-                <div className="flex flex-col justify-center space-y-6">
-                    <Badge className="w-fit" variant="secondary">Kollam's Trusted Logistics</Badge>
-                    <h1 className="text-4xl font-bold tracking-tight md:text-6xl text-foreground">
-                        Unmatched load.<br/>
-                        <span className="text-primary">On-time delivery.</span>
-                    </h1>
-                    <p className="text-muted-foreground text-lg max-w-md">
-                        Reliable delivery of M-Sand, P-Sand, Crushed Metal, Rock Boulders, Gravel and more — serving Kollam, Kallada, Munroe Thuruth and surrounding areas.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                        <Button size="lg" onClick={() => navigate('calculator')}>Calculate Estimate</Button>
-                        <Button size="lg" variant="outline" onClick={() => navigate('contact')}>Contact Us</Button>
+        <div className="container mx-auto px-4 py-8 md:py-16 max-w-6xl">
+            <div className="grid gap-12 md:grid-cols-2 items-center">
+                <div className="flex flex-col space-y-8">
+                    <div className="space-y-4">
+                        <Badge className="w-fit bg-primary/20 text-primary hover:bg-primary/30 border-none px-4 py-1 text-xs md:text-sm" variant="outline">Kollam's Trusted Logistics</Badge>
+                        <h1 className="text-4xl font-extrabold tracking-tight md:text-6xl lg:text-7xl">
+                            Unmatched load.<br/>
+                            <span className="text-primary italic">On-time delivery.</span>
+                        </h1>
+                        <p className="text-muted-foreground text-base md:text-xl leading-relaxed max-w-lg">
+                            Professional delivery of M-Sand, P-Sand, Crushed Metal, Rock Boulders, and Gravel. Reliable service across Kollam and surrounding regions.
+                        </p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <Button size="lg" className="h-12 md:h-14 px-6 md:px-8 text-base md:text-lg font-bold shadow-lg shadow-primary/20" onClick={() => navigate('calculator')}>Calculate Estimate</Button>
+                        <Button size="lg" variant="outline" className="h-12 md:h-14 px-6 md:px-8 text-base md:text-lg font-bold" onClick={() => navigate('contact')}>Contact Us</Button>
+                    </div>
+                    <div className="flex items-center gap-8 pt-4">
+                        <div className="flex flex-col">
+                            <span className="text-2xl font-bold">24/7</span>
+                            <span className="text-xs text-muted-foreground uppercase tracking-widest">Support</span>
+                        </div>
+                        <div className="w-px h-8 bg-border"></div>
+                        <div className="flex flex-col">
+                            <span className="text-2xl font-bold">15+</span>
+                            <span className="text-xs text-muted-foreground uppercase tracking-widest">Zones</span>
+                        </div>
+                        <div className="w-px h-8 bg-border"></div>
+                        <div className="flex flex-col">
+                            <span className="text-2xl font-bold">Verified</span>
+                            <span className="text-xs text-muted-foreground uppercase tracking-widest">Fleet</span>
+                        </div>
                     </div>
                 </div>
-                <div className="rounded-xl overflow-hidden border bg-muted/30 p-6 flex flex-col justify-center">
-                    <div className="grid grid-cols-2 gap-4">
-                        <Card>
-                            <CardHeader className="p-4"><CardTitle className="text-3xl font-bold text-primary">24/7</CardTitle></CardHeader>
-                            <CardContent className="p-4 pt-0 text-sm text-muted-foreground">Emergency Support</CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="p-4"><CardTitle className="text-3xl font-bold text-primary">15+</CardTitle></CardHeader>
-                            <CardContent className="p-4 pt-0 text-sm text-muted-foreground">Service Zones</CardContent>
-                        </Card>
-                        <Card className="col-span-2">
-                            <CardContent className="p-4 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-primary/10 rounded-lg"><Icons.Truck className="text-primary w-5 h-5"/></div>
-                                    <div className="font-semibold text-sm">Heavy Duty Fleet</div>
-                                </div>
-                                <Badge variant="outline">Verified</Badge>
-                            </CardContent>
-                        </Card>
+                <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-primary/50 to-transparent rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+                    <div className="relative bg-card border rounded-2xl overflow-hidden shadow-2xl">
+                        <img 
+                            src="images/6779.png" 
+                            alt="Eicher Truck" 
+                            className="w-full h-auto object-cover transform transition duration-500 hover:scale-105"
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent text-white">
+                            <div className="flex items-center gap-2">
+                                <Badge variant="default" className="bg-primary text-primary-foreground font-bold">PREMIUM SERVICE</Badge>
+                                <span className="text-sm font-medium opacity-80">KL 24 X 6779</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -111,32 +127,40 @@ function HomePage({ navigate }) {
 }
 
 function CalculatorPage() {
-    const [materials] = useState(getMaterials);
-    const [locations] = useState(getLocations);
+    const [materials, setMaterials] = useState([]);
+    const [locations, setLocations] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [selMat, setSelMat] = useState(null);
     const [selFt, setSelFt] = useState('');
-    const [selLoad, setSelLoad] = useState('');
     const [selLoc, setSelLoc] = useState('');
     const [loads, setLoads] = useState(1);
     const [result, setResult] = useState(null);
 
-    const mat = useMemo(() => materials.find(m => m.id.toString() === selMat), [materials, selMat]);
-    const loc = useMemo(() => locations.find(l => l.id.toString() === selLoc), [locations, selLoc]);
+    useEffect(() => {
+        Promise.all([fetchMaterials(), fetchLocations()]).then(([m, l]) => {
+            setMaterials(m); setLocations(l); setLoading(false);
+        });
+    }, []);
+
+    const mat = useMemo(() => materials.find(m => m.id?.toString() === selMat), [materials, selMat]);
+    const loc = useMemo(() => locations.find(l => l.id?.toString() === selLoc), [locations, selLoc]);
 
     function calculate() {
         if (!mat || !loc) return;
         let matCost = 0;
         if (mat.pricing_type === 'per_ft') {
             if (!selFt) return;
-            matCost = mat.price_per_ft * parseInt(selFt);
+            matCost = Number(mat.price_per_ft) * parseInt(selFt);
         } else {
-            matCost = mat.price_per_load;
+            matCost = Number(mat.price_per_load);
         }
-        const tpCost = loc.transport_rate;
+        const tpCost = Number(loc.transport_rate);
         const base = matCost + tpCost;
         const total = base * loads;
         setResult({ matCost, tpCost, base, total, mat, loc, ft: selFt, loads });
     }
+
+    if (loading) return <div className="container mx-auto px-4 py-12 max-w-3xl"><Loading text="Loading calculator..." /></div>;
 
     return (
         <div className="container mx-auto px-4 py-8 md:py-12 max-w-3xl">
@@ -191,7 +215,7 @@ function CalculatorPage() {
                             <Label>Delivery Destination</Label>
                             <Select value={selLoc || ''} onChange={e => { setSelLoc(e.target.value); setResult(null); }}>
                                 <option value="">Choose location...</option>
-                                {locations.map(l => <option key={l.id} value={l.id}>{l.name} — ₹{l.transport_rate.toLocaleString()}</option>)}
+                                {locations.map(l => <option key={l.id} value={l.id}>{l.name} — ₹{Number(l.transport_rate).toLocaleString()}</option>)}
                             </Select>
                         </div>
 
