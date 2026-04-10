@@ -1,0 +1,13 @@
+{
+  "name": "kannan-kalyani-logistics",
+  "version": "1.0.0",
+  "description": "Kannan Kalyani Construction Logistics & Services — Smart web app with expense calculator and admin panel",
+  "scripts": {
+    "dev": "python serve.py",
+    "start": "python serve.py",
+    "serve": "python serve.py"
+  },
+  "keywords": ["logistics", "construction", "kollam", "kerala"],
+  "author": "Kannan Kalyani",
+  "license": "ISC"
+}

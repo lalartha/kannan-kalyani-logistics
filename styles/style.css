@@ -47,10 +47,9 @@ body {
     padding: 3px 4px;
     border-radius: 5px;
     box-shadow: #454444 1px 2px 7px;
-    width:auto;
     display:flex;
-    justify-content:center;
-    align-items:center;
+    flex-direction: column;
+    align-items:flex-start;
 }
 .menu{
     display:none;
@@ -71,11 +70,12 @@ body {
     border: none;
     cursor: pointer;
     margin-right: 10px;
+    align-items: center;
 }
 @media (max-width: 700px) {
   .menu {
-    display: none;
-    flex-direction: column;
+    display: flex;
+    flex-direction: row;
     position: absolute;
     top: 50px;
     left: 10px;
@@ -84,12 +84,13 @@ body {
     box-shadow: #454444 1px 2px 7px;
     width: 180px;
     z-index: 100;
+    gap:20px;
   }
   .menu.show {
     display: flex;
   }
   .menu-icon {
-    display: block;
+    display: none;
   }
 }
 .heading{

@@ -7,7 +7,7 @@ function calculateExpense() {
     document.getElementById("result").innerHTML = "Total Expense: " + total;
     console.log("Button clicked!")
 }
-function menuToggle(){
-    const menu = document.getElementById("menu");
-    menu.classList.toggle("show");
+function menuToggle() {
+  const menu = document.getElementById("menu");
+  menu.classList.toggle("show");
 }
