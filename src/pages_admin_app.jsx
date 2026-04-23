@@ -124,11 +124,7 @@ function App() {
                     {page === 'admin' && <AdminPage />}
                     {page === 'contact' && <ContactPage />}
                 </main>
-                <footer className="border-t py-6 md:py-0 bg-muted/40 text-muted-foreground text-sm">
-                    <div className="container mx-auto flex flex-col items-center justify-between gap-4 md:h-16 md:flex-row px-4">
-                        <p>© 2026 Kannan Kalyani Logistics. All rights reserved.</p>
-                    </div>
-                </footer>
+                {page !== 'home' ? <Footer /> : <Footer />}
             </div>
         </ThemeProvider>
     );

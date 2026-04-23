@@ -13,7 +13,7 @@ import sys
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
-PORT = 3000
+PORT = 3001
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
 class Handler(http.server.SimpleHTTPRequestHandler):
